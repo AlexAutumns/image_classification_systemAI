@@ -9,16 +9,18 @@ import matplotlib.pyplot as plt
 # ----------------------------------------
 
 DATA_DIR = "data"
-IMAGES_TRAIN_DIR = os.path.join(DATA_DIR, "myntradataset", "images")
-CSV_TRAIN_PATH = os.path.join(DATA_DIR, "myntradataset", "styles.csv")
+# IMAGES_TRAIN_DIR = os.path.join(DATA_DIR, "myntradataset", "images")
+# CSV_TRAIN_PATH = os.path.join(DATA_DIR, "myntradataset", "styles.csv")
 
 # Uncomment below lines to use original dataset later
+IMAGES_TRAIN_DIR = os.path.join(DATA_DIR, "images")
+CSV_TRAIN_PATH = os.path.join(DATA_DIR, "styles.csv")
 # IMAGES_VAL_DIR = os.path.join(DATA_DIR, "images")
 # CSV_VAL_PATH = os.path.join(DATA_DIR, "styles.csv")
 
 IMAGE_SIZE = (60, 80)
 BATCH_SIZE = 16  # smaller batch to reduce resource use
-EPOCHS = 50
+EPOCHS = 1000
 LABEL_COLUMN = "articleType"  # change if needed
 
 # ----------------------------------------
@@ -133,7 +135,7 @@ model.summary()
 # ----------------------------------------
 
 callbacks_list = [
-    callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True),
+    callbacks.EarlyStopping(monitor='val_loss', patience=100, restore_best_weights=True),
     callbacks.ModelCheckpoint('best_clothing_classifier_model.h5', save_best_only=True)
 ]
 
