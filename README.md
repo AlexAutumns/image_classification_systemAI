@@ -17,7 +17,9 @@ The training data is sourced from the [Fashion Product Images (Small)](https://w
   Python virtual environment (excluded from GitHub)
 
 - `data/`  
-  Contains all dataset-related files  
+  Contains all dataset-related files
+  - `images/` — Main images 
+  - `styles.csv` — Metadata file with labels like `articleType`
   - `myntradataset/`  
     - `images/` — Training images  
     - `styles.csv` — Metadata file with labels like `articleType`
@@ -33,6 +35,7 @@ The training data is sourced from the [Fashion Product Images (Small)](https://w
 
 ## ⚙️ Technologies & Libraries
 
+### Model
 - Python 3
 - TensorFlow / Keras
 - Pandas
@@ -40,6 +43,8 @@ The training data is sourced from the [Fashion Product Images (Small)](https://w
 - NumPy
 
 > Optional: GPU support enabled for faster training
+
+###
 
 ## 🚀 Planned Frontend
 
