@@ -5,6 +5,7 @@ matplotlib
 fastapi
 uvicorn
 python-multipart
-Pillow
+pillow
 scikit-learn
 numpy
+focal-loss
