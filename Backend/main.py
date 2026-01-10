@@ -9,7 +9,7 @@ Backend for Fashion Image Classifier
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from tensorflow.keras.models import load_model
+import tensorflow as tf
 from focal_loss import SparseCategoricalFocalLoss  # required for loading compiled models
 from PIL import Image
 import numpy as np
@@ -134,16 +134,18 @@ MASTER_TO_SUB, SUB_TO_ARTICLE = build_hierarchy()
 # ----------------------------- Model loading -----------------------------
 # We keep compile=False to avoid re-creating custom loss instances
 # but we still pass the custom_objects in case Keras tries to deserialize.
-master_sub_model = load_model(
+master_sub_model = tf.keras.models.load_model(
     MASTER_SUB_MODEL_PATH,
     custom_objects={"SparseCategoricalFocalLoss": SparseCategoricalFocalLoss},
     compile=False,
 )
-article_model = load_model(
+
+article_model = tf.keras.models.load_model(
     ARTICLE_MODEL_PATH,
     custom_objects={"SparseCategoricalFocalLoss": SparseCategoricalFocalLoss},
     compile=False,
 )
+
 
 def check_model_label_compatibility() -> Dict[str, str]:
     """

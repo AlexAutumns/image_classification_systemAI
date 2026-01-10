@@ -28,7 +28,7 @@ METRICS_CSV_PATH = os.path.join(MODELS_DIR, "training_metrics_master_sub.csv")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 10
+EPOCHS = 1
 PATIENCE = 5
 
 MULTI_LABEL_COLUMNS = ["masterCategory", "subCategory"]
@@ -99,12 +99,17 @@ loss_weights = {
 }
 metrics = {label: "accuracy" for label in MULTI_LABEL_COLUMNS}
 
-from tensorflow.keras.optimizers import AdamW
+# Optimizer (AdamW if available, otherwise Adam)
+try:
+    optimizer = tf.keras.optimizers.AdamW(learning_rate=1e-4, weight_decay=1e-5)
+except Exception:
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+
 multi_model.compile(
-    optimizer=AdamW(learning_rate=1e-4, weight_decay=1e-5),
+    optimizer=optimizer,
     loss=losses,
     loss_weights=loss_weights,
-    metrics=metrics
+    metrics=metrics,
 )
 
 multi_model.summary()

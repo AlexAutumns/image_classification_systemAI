@@ -10,7 +10,6 @@ from model_builder import build_model
 from data_loader import load_dataset, tuple_to_dict_dataset
 from utils import display_training_summary, plot_training_metrics
 from focal_loss import SparseCategoricalFocalLoss
-from tensorflow.keras.utils import plot_model
 
 # ----------------------------------------
 # Configuration
@@ -34,7 +33,7 @@ TEST_RESULTS_JSON_PATH = os.path.join(MODELS_DIR, "test_results_all_heads.json")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 10
+EPOCHS = 1
 PATIENCE = 10
 
 # We keep ALL heads, but we will prioritize articleType in loss weights + monitoring.
@@ -126,18 +125,37 @@ loss_weights = {
 
 metrics = {label: "accuracy" for label in LABEL_COLUMNS}
 
-from tensorflow.keras.optimizers import AdamW
+
+# Optimizer (AdamW if available, otherwise Adam)
+try:
+    optimizer = tf.keras.optimizers.AdamW(learning_rate=1e-4, weight_decay=1e-5)
+except Exception:
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+
 model.compile(
-    optimizer=AdamW(learning_rate=1e-4, weight_decay=1e-5),
+    optimizer=optimizer,
     loss=losses,
     loss_weights=loss_weights,
     metrics=metrics,
 )
 
+
 model.summary()
 
-plot_model(model, to_file=os.path.join(MODELS_DIR, "model_architecture.png"),
-           show_shapes=True, show_layer_names=True, expand_nested=False)
+# Model diagram (optional; requires pydot/graphviz)
+try:
+    tf.keras.utils.plot_model(
+        model,
+        to_file=os.path.join(MODELS_DIR, "model_architecture.png"),
+        show_shapes=True,
+        show_layer_names=True,
+        expand_nested=False,
+    )
+    print("🖼️ Saved model diagram: model_architecture.png")
+except Exception as e:
+    print(f"⚠️ Skipping model diagram (missing pydot/graphviz or other issue): {e}")
+
+
 
 # ----------------------------------------
 # Callbacks (monitor articleType primarily)
