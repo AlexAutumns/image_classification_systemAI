@@ -1,0 +1,7 @@
+{
+  "loss": 0.4367576539516449,
+  "masterCategory_accuracy": 0.9512158632278442,
+  "masterCategory_loss": 0.08701900392770767,
+  "subCategory_accuracy": 0.8653557300567627,
+  "subCategory_loss": 0.3492402732372284
+}

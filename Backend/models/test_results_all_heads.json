@@ -1,0 +1,26 @@
+{
+  "split_sizes": {
+    "train": 31095,
+    "val": 6662,
+    "test": 6662
+  },
+  "test_results": {
+    "articleType_accuracy": 0.14395076036453247,
+    "articleType_loss": 0.8830340504646301,
+    "loss": 3.1063342094421387,
+    "masterCategory_accuracy": 0.5157610177993774,
+    "masterCategory_loss": 0.7177819013595581,
+    "subCategory_accuracy": 0.3468928337097168,
+    "subCategory_loss": 1.9699954986572266
+  },
+  "notes": {
+    "monitor_metric": "val_articleType_accuracy",
+    "loss_weights": {
+      "articleType": 2.0,
+      "masterCategory": 0.5,
+      "subCategory": 0.5
+    },
+    "val_split": 0.15,
+    "test_split": 0.15
+  }
+}

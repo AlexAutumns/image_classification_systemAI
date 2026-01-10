@@ -28,7 +28,7 @@ METRICS_CSV_PATH = os.path.join(MODELS_DIR, "training_metrics_master_sub.csv")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 5
+EPOCHS = 3
 PATIENCE = 5
 
 MULTI_LABEL_COLUMNS = ["masterCategory", "subCategory"]
@@ -138,7 +138,7 @@ history = multi_model.fit(
     validation_data=val_ds,
     epochs=EPOCHS,
     callbacks=[early_stopping, model_checkpoint, reduce_lr],
-    verbose=2,   # ✅ cleaner output
+    verbose=1, 
 )
 
 end_time = time.time()

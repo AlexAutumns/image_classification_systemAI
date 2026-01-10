@@ -33,7 +33,7 @@ TEST_RESULTS_JSON_PATH = os.path.join(MODELS_DIR, "test_results_all_heads.json")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 5
+EPOCHS = 3
 PATIENCE = 10
 
 # We keep ALL heads, but we will prioritize articleType in loss weights + monitoring.
@@ -191,8 +191,9 @@ history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
-    callbacks=[...],
-    verbose=2,   # ✅ cleaner output
+    callbacks=[early_stopping, model_checkpoint, reduce_lr]
+,
+    verbose=1
 )
 
 
