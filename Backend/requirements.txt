@@ -9,3 +9,4 @@ pillow
 scikit-learn
 numpy
 focal-loss
+pydot

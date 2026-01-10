@@ -33,7 +33,7 @@ TEST_RESULTS_JSON_PATH = os.path.join(MODELS_DIR, "test_results_all_heads.json")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 1
+EPOCHS = 5
 PATIENCE = 10
 
 # We keep ALL heads, but we will prioritize articleType in loss weights + monitoring.
@@ -142,18 +142,12 @@ model.compile(
 
 model.summary()
 
-# Model diagram (optional; requires pydot/graphviz)
-try:
-    tf.keras.utils.plot_model(
-        model,
-        to_file=os.path.join(MODELS_DIR, "model_architecture.png"),
-        show_shapes=True,
-        show_layer_names=True,
-        expand_nested=False,
-    )
-    print("🖼️ Saved model diagram: model_architecture.png")
-except Exception as e:
-    print(f"⚠️ Skipping model diagram (missing pydot/graphviz or other issue): {e}")
+# Save model summary to a text file (easy to include in report as a screenshot/excerpt)
+summary_path = os.path.join(MODELS_DIR, "model_summary.txt")
+with open(summary_path, "w", encoding="utf-8") as f:
+    model.summary(print_fn=lambda s: f.write(s + "\n"))
+
+print(f"📄 Model summary saved to: {summary_path}")
 
 
 
@@ -197,8 +191,10 @@ history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
-    callbacks=[early_stopping, model_checkpoint, reduce_lr],
+    callbacks=[...],
+    verbose=2,   # ✅ cleaner output
 )
+
 
 end_time = time.time()
 print(f"\n⏱️ Training completed in {end_time - start_time:.2f} seconds.")
