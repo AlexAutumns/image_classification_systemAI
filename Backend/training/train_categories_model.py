@@ -6,6 +6,7 @@ from model_builder import build_model
 from data_loader import load_dataset, tuple_to_dict_dataset
 from utils import display_training_summary, plot_training_metrics
 from focal_loss import SparseCategoricalFocalLoss
+import json
 
 # ----------------------------------------
 # Configuration
@@ -27,7 +28,7 @@ METRICS_CSV_PATH = os.path.join(MODELS_DIR, "training_metrics_master_sub.csv")
 
 IMAGE_SIZE = (128, 170)
 BATCH_SIZE = 128
-EPOCHS = 20
+EPOCHS = 10
 PATIENCE = 5
 
 MULTI_LABEL_COLUMNS = ["masterCategory", "subCategory"]
@@ -46,18 +47,22 @@ if gpus:
 # ----------------------------------------
 # Load dataset
 # ----------------------------------------
-train_ds, val_ds, label_encodings, train_len, val_len = load_dataset(
+train_ds, val_ds, test_ds, label_encodings, train_len, val_len, test_len = load_dataset(
     CSV_PATH,
     IMAGE_DIR,
-    MULTI_LABEL_COLUMNS + ["articleType"],  # still load articleType to keep dataset consistent, but will not use it in training
+    MULTI_LABEL_COLUMNS + ["articleType"],
     image_size=IMAGE_SIZE,
     batch_size=BATCH_SIZE,
-    val_split=0.2,
+    val_split=0.15,
+    test_split=0.15,
 )
+
 
 # Convert tuple labels to dict labels for multi-output model
 train_ds = tuple_to_dict_dataset(train_ds, MULTI_LABEL_COLUMNS)
 val_ds = tuple_to_dict_dataset(val_ds, MULTI_LABEL_COLUMNS)
+test_ds = tuple_to_dict_dataset(test_ds, MULTI_LABEL_COLUMNS)
+
 
 # Build label size dict for model (only masterCategory and subCategory)
 label_sizes = {label: len(label_encodings[label][0]) for label in MULTI_LABEL_COLUMNS}
@@ -132,6 +137,19 @@ history = multi_model.fit(
 
 end_time = time.time()
 print(f"\n⏱️ Training completed in {end_time - start_time:.2f} seconds.")
+
+TEST_RESULTS_PATH = os.path.join(MODELS_DIR, "test_results_master_sub.json")
+
+print("\n🧪 Evaluating masterCategory+subCategory model on TEST set...")
+test_results = multi_model.evaluate(test_ds, verbose=1, return_dict=True)
+print("\n✅ TEST results:", test_results)
+
+with open(TEST_RESULTS_PATH, "w", encoding="utf-8") as f:
+    json.dump(test_results, f, indent=2)
+
+print(f"📤 TEST results saved at {TEST_RESULTS_PATH}")
+print(f"📊 Split sizes: train={train_len}, val={val_len}, test={test_len}")
+
 
 # ----------------------------------------
 # Save metrics & plots

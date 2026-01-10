@@ -192,13 +192,15 @@ def check_model_label_compatibility() -> Dict[str, str]:
             warnings["master_sub_labels"] = f"Master-Sub output {total} != expected {expected}"
         ok_master_sub = True  # still usable; we handle at runtime
 
-    # Article
-    if len(ar_parts) != 1:
-        warnings["article_heads"] = "Article model returned multiple outputs; expected single head."
-    else:
-        a_dim = ar_parts[0].shape[-1]
+    # Article: allow multi-output, but validate the articleType head size specifically
+    try:
+        article_head = _get_named_output(ar_out, article_model, "articleType")
+        a_dim = article_head.shape[-1]
         if a_dim != len(ARTICLE_CLASSES):
-            warnings["article_labels"] = f"Article head size {a_dim} != len(ARTICLE_CLASSES) {len(ARTICLE_CLASSES)}"
+            warnings["article_labels"] = f"ArticleType head size {a_dim} != len(ARTICLE_CLASSES) {len(ARTICLE_CLASSES)}"
+    except Exception as e:
+        warnings["article_heads"] = f"Could not extract 'articleType' head: {repr(e)}"
+
 
     # Print warnings so you see them server-side
     if warnings:
@@ -221,43 +223,73 @@ def preprocess_image(file_bytes: bytes, target_size=(IMG_HEIGHT, IMG_WIDTH)) -> 
     arr = (np.array(img).astype(np.float32) / 255.0)[None, ...]  # (1, H, W, 3)
     return arr
 
+def _get_named_output(pred_outputs, model, head_name: str) -> np.ndarray:
+    """
+    Robustly extract a named head from a model prediction.
+
+    Supports:
+      - dict output: uses pred_outputs[head_name]
+      - list/tuple output: uses model.output_names to find index
+      - single tensor output: returns as-is (caller can slice if needed)
+    Returns:
+      (num_classes,) vector (for batch size 1)
+    """
+    # Dict: safest
+    if isinstance(pred_outputs, dict):
+        if head_name in pred_outputs:
+            return np.array(pred_outputs[head_name])[0]
+        # Fallback: try best-effort by output_names if dict keys differ
+        if hasattr(model, "output_names") and head_name in model.output_names:
+            # Map dict keys to output_names only if they match; otherwise raise
+            raise KeyError(f"Prediction dict missing expected key '{head_name}'. Keys={list(pred_outputs.keys())}")
+        raise KeyError(f"Prediction dict missing expected key '{head_name}'. Keys={list(pred_outputs.keys())}")
+
+    # List/Tuple: use output_names
+    if isinstance(pred_outputs, (list, tuple)):
+        if not hasattr(model, "output_names") or head_name not in model.output_names:
+            # Fallback to first element (legacy), but make it explicit:
+            return np.array(pred_outputs[0])[0]
+        idx = model.output_names.index(head_name)
+        return np.array(pred_outputs[idx])[0]
+
+    # Single tensor
+    return np.array(pred_outputs)[0]
+
+
 def flatten_master_sub_output(pred_outputs) -> Tuple[np.ndarray, np.ndarray]:
     """
     Accepts outputs from master_sub_model and returns (pred_master, pred_sub).
     Supports:
-      - list/tuple of two heads [master_probs, sub_probs]
-      - dict with 2 values
-      - single tensor with concat [master_probs..., sub_probs...]
+      - list/tuple of two heads
+      - dict with named heads
+      - single tensor with concat [master..., sub...]
     """
-    if isinstance(pred_outputs, (list, tuple)):
-        if len(pred_outputs) != 2:
-            raise ValueError("Expected 2 heads for master_sub_model but got different length.")
-        pm = np.array(pred_outputs[0])[0]
-        ps = np.array(pred_outputs[1])[0]
-        return pm, ps
-    elif isinstance(pred_outputs, dict):
-        vals = list(pred_outputs.values())
-        if len(vals) != 2:
-            raise ValueError("Expected dict with 2 outputs for master_sub_model.")
-        pm = np.array(vals[0])[0]
-        ps = np.array(vals[1])[0]
-        return pm, ps
-    else:
-        flat = np.array(pred_outputs)[0]
-        num_master = len(MASTER_CLASSES)
-        pm = flat[:num_master]
-        ps = flat[num_master:]
+    # If dict/list/tuple (multi-head), extract by name when possible
+    if isinstance(pred_outputs, (list, tuple, dict)):
+        pm = _get_named_output(pred_outputs, master_sub_model, "masterCategory")
+        ps = _get_named_output(pred_outputs, master_sub_model, "subCategory")
         return pm, ps
 
+    # Else assume single concat tensor
+    flat = np.array(pred_outputs)[0]
+    num_master = len(MASTER_CLASSES)
+    pm = flat[:num_master]
+    ps = flat[num_master:]
+    return pm, ps
+
+
 def flatten_article_output(pred_outputs) -> np.ndarray:
-    """Returns (num_classes,) for the article model."""
-    if isinstance(pred_outputs, (list, tuple)):
-        arr = np.array(pred_outputs[0])[0]
-    elif isinstance(pred_outputs, dict):
-        arr = np.array(list(pred_outputs.values())[0])[0]
-    else:
-        arr = np.array(pred_outputs)[0]
-    return arr
+    """
+    Returns (num_classes,) for the article model.
+
+    If the article_model is multi-output, we explicitly extract the 'articleType' head by name.
+    """
+    if isinstance(pred_outputs, (list, tuple, dict)):
+        return _get_named_output(pred_outputs, article_model, "articleType")
+
+    return np.array(pred_outputs)[0]
+
+
 
 def safe_argmax(pred: np.ndarray, valid_indices: Optional[List[int]] = None) -> int:
     """
